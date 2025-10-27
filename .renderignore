@@ -1,0 +1,29 @@
+# Files to ignore during Render deploy
+
+# Development files
+.env.example
+.env.local
+*.log
+
+# Documentation
+QUICKSTART.md
+DEPLOY.md
+
+# Editor
+.vscode/
+.idea/
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Temporary files
+attached_assets/
+dashtool300/
+
+# Old/backup files
+server/storage-old.ts
+server/routes-backup.ts
+

@@ -1,0 +1,65 @@
+{
+  "name": "Bueiro Digital",
+  "short_name": "Bueiro Digital",
+  "description": "Plataforma de rastreamento de vendas para marketeiros digitais",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-bueiro-digital.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/logo-bueiro-digital.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver métricas principais",
+      "url": "/dashboard/dashboard_1",
+      "icons": [
+        {
+          "src": "/logo-bueiro-digital.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Campanhas",
+      "short_name": "Campanhas",
+      "description": "Gerenciar campanhas",
+      "url": "/campanhas",
+      "icons": [
+        {
+          "src": "/logo-bueiro-digital.svg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Facebook Ads",
+      "short_name": "Facebook",
+      "description": "Contas Facebook",
+      "url": "/facebook-accounts",
+      "icons": [
+        {
+          "src": "/logo-bueiro-digital.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
