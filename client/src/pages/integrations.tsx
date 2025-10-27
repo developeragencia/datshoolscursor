@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { 
-  Search, 
+  Search,
   ArrowLeft,
   CheckCircle,
   ExternalLink,
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
             </div>
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Filters & Search */}
       <div className="bg-gray-50 dark:bg-gray-800 py-8 border-b">
@@ -210,40 +210,40 @@ export default function IntegrationsPage() {
             <div className="flex flex-col lg:flex-row gap-4 items-center">
               <div className="w-full lg:w-96 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <Input
+              <Input
                   placeholder="Buscar integração..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-12"
-                />
-              </div>
+              />
+            </div>
               <div className="flex gap-2 flex-wrap justify-center">
                 {categories.map((category) => {
                   const Icon = category.icon;
                   return (
-                    <Button
-                      key={category.id}
-                      variant={selectedCategory === category.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category.id)}
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category.id)}
                       className={`h-10 ${selectedCategory === category.id ? "bg-blue-600 hover:bg-blue-700" : ""}`}
-                    >
+                >
                       <Icon className="h-4 w-4 mr-2" />
-                      {category.label}
-                    </Button>
+                  {category.label}
+                </Button>
                   );
                 })}
               </div>
             </div>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
       {/* Integrations Grid */}
       <div className="py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">
-            {filteredIntegrations.length === 0 ? (
+          {filteredIntegrations.length === 0 ? (
               <div className="text-center py-20">
                 <Zap className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -313,8 +313,8 @@ export default function IntegrationsPage() {
                       {/* Hover Effect */}
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
                     </div>
-                  ))}
-                </div>
+              ))}
+            </div>
               </>
             )}
           </div>

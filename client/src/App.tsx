@@ -11,7 +11,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Pricing from "@/pages/pricing";
 import Integrations from "@/pages/integrations";
-import LoginComplete from "@/pages/login-complete";
+import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import DashboardUTMify from "@/pages/dashboard-utmify";
@@ -145,7 +145,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/precos" component={Pricing} />
       <Route path="/integracoes" component={Integrations} />
-      <Route path="/login" component={LoginComplete} />
+      <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={DashboardUTMify} />
       <Route path="/dashboard-old" component={Dashboard} />
