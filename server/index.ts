@@ -3,6 +3,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { env } from "./env";
 
 const app = express();
 app.use(express.json());
@@ -12,20 +13,20 @@ app.use(express.urlencoded({ extended: false }));
 const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
 const pgStore = connectPg(session);
 const sessionStore = new pgStore({
-  conString: process.env.DATABASE_URL,
+  conString: env.DATABASE_URL,
   createTableIfMissing: true,
   ttl: sessionTtl / 1000, // convert to seconds
   tableName: "sessions",
 });
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-secret-key-change-in-production',
+  secret: env.SESSION_SECRET,
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false, // set to true in production with HTTPS
+    secure: env.NODE_ENV === 'production', // Enable secure cookies in production
     maxAge: sessionTtl,
   },
 }));
@@ -105,12 +106,11 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
-    port,
+    port: env.PORT,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${env.PORT}`);
   });
 })();

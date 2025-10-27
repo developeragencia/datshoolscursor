@@ -8,6 +8,7 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,4 +20,6 @@ services:
         value: 10000
       - key: NODE_OPTIONS
         value: --max-old-space-size=2048
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
 
