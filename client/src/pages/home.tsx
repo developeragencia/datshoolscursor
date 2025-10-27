@@ -8,8 +8,18 @@ import LogoCarousel from "@/components/ui/logo-carousel";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [stars, setStars] = useState<{ id: string; top: string; left: string; width: string; height: string; opacity: number }[]>([]);
 
   useEffect(() => {
+    const generatedStars = Array.from({ length: 100 }).map((_, i) => ({
+      id: `star-${i}-${Math.random()}`,
+      top: `${Math.random() * 100}%`,
+      left: `${Math.random() * 100}%`,
+      width: `${Math.random() * 2 + 1}px`,
+      height: `${Math.random() * 2 + 1}px`,
+      opacity: Math.random() * 0.7 + 0.3
+    }));
+    setStars(generatedStars);
     setMounted(true);
   }, []);
 
@@ -17,14 +27,28 @@ export default function Home() {
     <main className="bg-white dark:bg-gray-900">
       <Header />
 
-      {/* Hero Section - Modern Gradient Design */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white py-20 md:py-32 overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full mix-blend-multiply filter blur-xl animate-blob" />
-          <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
-          <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
+      {/* Hero Section - Design from Register Page */}
+      <div className="relative bg-gradient-to-r from-blue-900 to-indigo-800 text-white py-20 md:py-32 overflow-hidden">
+        {/* Animated Stars Background */}
+        <div className="absolute inset-0">
+          {stars.map((star) => (
+            <div
+              key={star.id}
+              className="star absolute bg-white rounded-full"
+              style={{
+                top: star.top,
+                left: star.left,
+                width: star.width,
+                height: star.height,
+                opacity: star.opacity,
+              }}
+            />
+          ))}
         </div>
+
+        {/* Animated Gradient Blobs */}
+        <div className="absolute top-[15%] left-[10%] w-40 h-40 rounded-full bg-gradient-to-br from-purple-500 to-purple-800 opacity-20 blur-md" />
+        <div className="absolute bottom-[10%] right-[15%] w-60 h-60 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 opacity-20 blur-md" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
@@ -349,6 +373,16 @@ export default function Home() {
 
       {mounted && (
         <style>{`
+          @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+
+          .star {
+            animation: twinkle linear infinite;
+            animation-duration: calc(5s + (var(--i, 0) * 0.5s));
+          }
+
           @keyframes blob {
             0%, 100% {
               transform: translate(0, 0) scale(1);

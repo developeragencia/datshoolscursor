@@ -177,6 +177,100 @@ router.get("/api/auth/me", async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// Google OAuth Routes
+router.get("/api/auth/google", (req: Request, res: Response) => {
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  const clientId = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
+  
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${clientId}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=openid%20email%20profile&` +
+    `access_type=offline&` +
+    `prompt=consent`;
+  
+  res.redirect(googleAuthUrl);
+});
+
+router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { code, error } = req.query;
+    
+    if (error) {
+      console.error("Google OAuth error:", error);
+      return res.redirect('/login?error=google_auth_failed');
+    }
+    
+    if (!code) {
+      return res.redirect('/login?error=no_code');
+    }
+    
+    const clientId = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "YOUR_GOOGLE_CLIENT_SECRET";
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+    
+    const tokens = await tokenResponse.json();
+    
+    if (tokens.error) {
+      console.error("Token exchange error:", tokens.error);
+      return res.redirect('/login?error=token_exchange_failed');
+    }
+    
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
+    
+    const googleUser = await userInfoResponse.json();
+    
+    // Check if user exists
+    let user = await storage.getUserByEmail(googleUser.email);
+    
+    if (!user) {
+      // Create new user
+      const randomPassword = Math.random().toString(36).slice(-12);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      
+      user = await storage.createUser({
+        email: googleUser.email,
+        username: googleUser.email.split('@')[0] + Math.random().toString(36).slice(-4),
+        firstName: googleUser.given_name || googleUser.name || 'User',
+        lastName: googleUser.family_name || '',
+        password: hashedPassword,
+        planType: 'gratuito',
+        userType: 'client',
+      });
+    }
+    
+    // Log user in
+    req.session.userId = user.id.toString();
+    
+    // Redirect to dashboard
+    res.redirect('/dashboard');
+  } catch (error) {
+    console.error("Google OAuth callback error:", error);
+    res.redirect('/login?error=google_auth_error');
+  }
+});
+
 // User routes
 router.put("/api/users/profile", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
