@@ -33,6 +33,13 @@ import RegrasAutomatizadas from "@/pages/regras-automatizadas";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin";
+import AdminUsers from "@/pages/admin/users";
+import AdminCampaigns from "@/pages/admin/campaigns";
+import AdminReports from "@/pages/admin/reports";
+import AdminLogs from "@/pages/admin/logs";
+import AdminSettings from "@/pages/admin/settings";
+import AdminDatabase from "@/pages/admin/database";
+import AdminNotifications from "@/pages/admin/notifications";
 
 function Router() {
   return (
@@ -69,6 +76,13 @@ function Router() {
       
       {/* Admin Routes */}
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/campaigns" component={AdminCampaigns} />
+      <Route path="/admin/reports" component={AdminReports} />
+      <Route path="/admin/logs" component={AdminLogs} />
+      <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/database" component={AdminDatabase} />
+      <Route path="/admin/notifications" component={AdminNotifications} />
       
       {/* 404 */}
       <Route component={NotFound} />

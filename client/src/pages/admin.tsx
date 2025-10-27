@@ -4,15 +4,12 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import {
   Users,
   DollarSign,
   Activity,
   TrendingUp,
-  Shield,
-  Settings,
-  LogOut,
-  Database,
   Server,
   AlertCircle,
   CheckCircle,
@@ -92,38 +89,11 @@ export default function AdminDashboard() {
   const HealthIcon = currentHealth.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Admin Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Shield className="h-6 w-6" />
-              <div>
-                <h1 className="text-lg font-bold">Painel Administrativo</h1>
-                <p className="text-xs text-purple-200">Dashtools Admin</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                Admin
-              </Badge>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white hover:bg-white/20"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar user={user} onLogout={handleLogout} />
+      
+      <div className="flex-1 lg:ml-64">
+        <div className="p-8">
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
