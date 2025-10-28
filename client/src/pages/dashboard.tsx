@@ -40,27 +40,27 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Detectar se veio do Google OAuth e invalidar cache
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromOAuth = urlParams.get('from');
-    
-    if (fromOAuth === 'google_oauth') {
-      console.log('🔄 Vindo do Google OAuth, invalidando cache e recarregando dados...');
-      // Invalidar cache para forçar reload dos dados do usuário
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      
-      // Limpar o parâmetro da URL
-      window.history.replaceState({}, '', '/dashboard');
-    }
-  }, [queryClient]);
+  }, []);
 
-  // Fetch user data com retry
-  const { data: user, isLoading: userLoading, error } = useQuery({
+  // Fetch user data com retry agressivo
+  const { data: user, isLoading: userLoading, error, refetch } = useQuery({
     queryKey: ["/api/auth/me"],
-    retry: 2, // Tentar 2 vezes antes de falhar
-    retryDelay: 500, // Aguardar 500ms entre tentativas
+    retry: 3, // Tentar 3 vezes
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Backoff exponencial
+    refetchOnMount: 'always', // Sempre buscar ao montar
+    staleTime: 0, // Considerar sempre desatualizado
   });
+
+  // Força refetch se não tiver usuário após 1 segundo
+  useEffect(() => {
+    if (!userLoading && !user && !error) {
+      const timer = setTimeout(() => {
+        console.log('🔄 Tentando buscar usuário novamente...');
+        refetch();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [userLoading, user, error, refetch]);
 
   // Fetch dashboard stats
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({

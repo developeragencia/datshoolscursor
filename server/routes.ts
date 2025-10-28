@@ -398,21 +398,84 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     console.log('🔐 Criando sessão para usuário:', user.id);
     req.session.userId = user.id.toString();
     
-    // Salvar sessão e redirecionar
-    req.session.save((err) => {
+    // Regenerar session para garantir novo cookie
+    req.session.regenerate((err) => {
       if (err) {
-        console.error("❌ Erro ao salvar sessão:", err);
-        console.error("❌ Detalhes do erro:", err.message);
-        return res.redirect('/login?error=session_error');
+        console.error("❌ Erro ao regenerar sessão:", err);
       }
       
-      console.log('✅ Sessão salva com sucesso');
-      console.log('✅ Session ID:', req.sessionID);
-      console.log('✅ User ID na sessão:', req.session.userId);
-      console.log('✅ Cookie vai ser enviado para o cliente');
+      // Definir userId novamente após regenerar
+      req.session.userId = user.id.toString();
       
-      // Usar redirect direto com query param para forçar reload
-      res.redirect('/dashboard?from=google_oauth');
+      // Salvar sessão
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error("❌ Erro ao salvar sessão:", saveErr);
+          console.error("❌ Detalhes do erro:", saveErr.message);
+          return res.redirect('/login?error=session_error');
+        }
+        
+        console.log('✅ Sessão salva com sucesso');
+        console.log('✅ Session ID:', req.sessionID);
+        console.log('✅ User ID na sessão:', req.session.userId);
+        
+        // Enviar página HTML que faz reload forçado
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Login Realizado</title>
+              <meta charset="utf-8">
+              <style>
+                body {
+                  font-family: system-ui, -apple-system, sans-serif;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 100vh;
+                  margin: 0;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: white;
+                }
+                .box {
+                  text-align: center;
+                  padding: 3rem;
+                  background: rgba(255,255,255,0.1);
+                  border-radius: 1rem;
+                  backdrop-filter: blur(10px);
+                }
+                .spinner {
+                  border: 4px solid rgba(255,255,255,0.3);
+                  border-top-color: white;
+                  border-radius: 50%;
+                  width: 50px;
+                  height: 50px;
+                  animation: spin 1s linear infinite;
+                  margin: 0 auto 1.5rem;
+                }
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+                h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+                p { margin: 0; opacity: 0.9; font-size: 0.9rem; }
+              </style>
+            </head>
+            <body>
+              <div class="box">
+                <div class="spinner"></div>
+                <h1>✅ Login realizado!</h1>
+                <p>Redirecionando para o painel...</p>
+              </div>
+              <script>
+                // Aguardar cookie ser definido e fazer reload completo da página
+                setTimeout(() => {
+                  window.location.replace('/dashboard');
+                }, 800);
+              </script>
+            </body>
+          </html>
+        `);
+      });
     });
   } catch (error) {
     console.error("❌ Google OAuth callback error (catch geral):", error);

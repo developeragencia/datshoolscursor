@@ -26,15 +26,17 @@ const sessionStore = new pgStore({
 app.use(session({
   secret: env.SESSION_SECRET,
   store: sessionStore,
-  resave: false,
+  resave: true, // Forçar salvar a cada requisição
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'lax', // Lax funciona melhor para OAuth redirects
+    sameSite: 'lax',
     maxAge: sessionTtl,
     path: '/',
+    domain: undefined, // Permitir qualquer domínio
   },
+  rolling: true, // Renovar cookie a cada requisição
 }));
 
 app.use((req, res, next) => {
