@@ -42,6 +42,10 @@ migrations/
 *.db
 *.sqlite
 
+# Google OAuth Credentials (Sensitive)
+client_secret_*.json
+*.credentials.json
+
 # Temporary files
 attached_assets/sistemabueiro/
 attached_assets/*.zip

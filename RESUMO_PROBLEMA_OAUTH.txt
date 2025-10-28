@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════════════
+🔴 PROBLEMA IDENTIFICADO - GOOGLE OAUTH NÃO FUNCIONA
+═══════════════════════════════════════════════════════════════════════
+
+ERRO: redirect_uri_mismatch (400)
+
+CAUSA:
+------
+Os redirect URIs no Google Cloud Console estão INCOMPLETOS.
+
+Configurado:
+  ❌ https://datshoolscursor.onrender.com
+  ❌ https://dashtoolsapp.com
+
+Necessário:
+  ✅ https://datshoolscursor.onrender.com/api/auth/google/callback
+  ✅ https://dashtoolsapp.com/api/auth/google/callback
+  ✅ http://localhost:5000/api/auth/google/callback
+
+═══════════════════════════════════════════════════════════════════════
+✅ SOLUÇÃO (5 MINUTOS)
+═══════════════════════════════════════════════════════════════════════
+
+1. Acesse: https://console.cloud.google.com/apis/credentials?project=datshools
+
+2. Clique no cliente OAuth 2.0:
+   408590510167-op0h1519p5c0hvrjd675afnq7usk79m9.apps.googleusercontent.com
+
+3. Em "URIs de redirecionamento autorizados", ADICIONE:
+   - https://datshoolscursor.onrender.com/api/auth/google/callback
+   - https://dashtoolsapp.com/api/auth/google/callback
+   - http://localhost:5000/api/auth/google/callback
+
+4. Clique em SALVAR
+
+5. Aguarde 30 segundos e teste
+
+═══════════════════════════════════════════════════════════════════════
+📚 DOCUMENTAÇÃO CRIADA
+═══════════════════════════════════════════════════════════════════════
+
+✅ CORRECAO_GOOGLE_OAUTH.md - Guia completo da correção
+✅ INSTRUCOES_CORRECAO_OAUTH.md - Instruções passo a passo com visual
+✅ env.example.txt - Exemplo de variáveis de ambiente
+
+═══════════════════════════════════════════════════════════════════════
+⚠️ IMPORTANTE
+═══════════════════════════════════════════════════════════════════════
+
+Esta correção PRECISA ser feita MANUALMENTE no Google Cloud Console.
+Não é possível automatizar via código.
+
+O código da aplicação está CORRETO.
+O problema é APENAS na configuração do Google OAuth.
+
+═══════════════════════════════════════════════════════════════════════
+Data: 28/10/2025
+Status: AGUARDANDO CORREÇÃO MANUAL NO GOOGLE CLOUD CONSOLE
+═══════════════════════════════════════════════════════════════════════
+

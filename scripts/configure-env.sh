@@ -58,9 +58,9 @@ PORT=5000
 # Session Secret (desenvolvimento)
 SESSION_SECRET=dashtools_dev_secret_change_in_production
 
-# Google OAuth - Login com Google
-GOOGLE_CLIENT_ID=408590510167-op0h1519p5c0hvrjd675afnq7usk79m9.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+# Google OAuth (opcional - configure se necessário)
+# GOOGLE_CLIENT_ID=seu_client_id_aqui
+# GOOGLE_CLIENT_SECRET=seu_client_secret_aqui
 
 # ═══════════════════════════════════════════════════════════════
 EOF
