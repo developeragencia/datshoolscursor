@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,14 +36,30 @@ interface DashboardStats {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [mounted, setMounted] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Detectar se veio do Google OAuth e invalidar cache
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromOAuth = urlParams.get('from');
+    
+    if (fromOAuth === 'google_oauth') {
+      console.log('🔄 Vindo do Google OAuth, invalidando cache e recarregando dados...');
+      // Invalidar cache para forçar reload dos dados do usuário
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      
+      // Limpar o parâmetro da URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [queryClient]);
 
-  // Fetch user data
-  const { data: user, isLoading: userLoading } = useQuery({
+  // Fetch user data com retry
+  const { data: user, isLoading: userLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
+    retry: 2, // Tentar 2 vezes antes de falhar
+    retryDelay: 500, // Aguardar 500ms entre tentativas
   });
 
   // Fetch dashboard stats
@@ -61,6 +77,13 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (!userLoading && !user && error) {
+      console.log('❌ Usuário não autenticado, redirecionando para login');
+      setLocation("/login");
+    }
+  }, [userLoading, user, error, setLocation]);
+
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -73,7 +96,6 @@ export default function Dashboard() {
   }
 
   if (!user) {
-    setLocation("/login");
     return null;
   }
 

@@ -398,7 +398,7 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     console.log('🔐 Criando sessão para usuário:', user.id);
     req.session.userId = user.id.toString();
     
-    // Salvar sessão e redirecionar com página de confirmação
+    // Salvar sessão e redirecionar
     req.session.save((err) => {
       if (err) {
         console.error("❌ Erro ao salvar sessão:", err);
@@ -409,63 +409,10 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
       console.log('✅ Sessão salva com sucesso');
       console.log('✅ Session ID:', req.sessionID);
       console.log('✅ User ID na sessão:', req.session.userId);
+      console.log('✅ Cookie vai ser enviado para o cliente');
       
-      // Enviar página HTML que redireciona via JavaScript
-      // Isso garante que o cookie seja definido antes do redirect
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Redirecionando...</title>
-            <meta charset="utf-8">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-                margin: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-              }
-              .container {
-                text-align: center;
-                padding: 2rem;
-              }
-              .spinner {
-                border: 4px solid rgba(255, 255, 255, 0.3);
-                border-top: 4px solid white;
-                border-radius: 50%;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 1rem;
-              }
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              h1 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
-              p { margin: 0; opacity: 0.9; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="spinner"></div>
-              <h1>Login realizado com sucesso! ✅</h1>
-              <p>Redirecionando para o dashboard...</p>
-            </div>
-            <script>
-              console.log('✅ Autenticação Google concluída');
-              console.log('🔄 Redirecionando para dashboard em 1 segundo...');
-              setTimeout(() => {
-                window.location.href = '/dashboard';
-              }, 1000);
-            </script>
-          </body>
-        </html>
-      `);
+      // Usar redirect direto com query param para forçar reload
+      res.redirect('/dashboard?from=google_oauth');
     });
   } catch (error) {
     console.error("❌ Google OAuth callback error (catch geral):", error);
