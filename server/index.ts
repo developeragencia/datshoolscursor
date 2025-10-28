@@ -31,8 +31,9 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax', // Permitir cookies em redirecionamentos
+    sameSite: 'lax', // Lax funciona melhor para OAuth redirects
     maxAge: sessionTtl,
+    path: '/',
   },
 }));
 
