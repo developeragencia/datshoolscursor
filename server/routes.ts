@@ -16,6 +16,7 @@ import bcrypt from "bcrypt";
 import { AuthenticatedRequest } from "./types";
 import FacebookAPI from "./facebook-api";
 import { FacebookConnector, FACEBOOK_CONFIG } from "./facebook-connect";
+import { env } from "./env";
 
 // Simple authentication middleware for sales routes
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -213,11 +214,14 @@ router.get("/api/auth/me", async (req: AuthenticatedRequest, res: Response) => {
 
 // Google OAuth Routes
 router.get("/api/auth/google", (req: Request, res: Response) => {
+  if (!env.GOOGLE_CLIENT_ID) {
+    return res.redirect('/login?error=google_oauth_not_configured');
+  }
+  
   const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
-  const clientId = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
   
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${clientId}&` +
+    `client_id=${env.GOOGLE_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(redirectUri)}&` +
     `response_type=code&` +
     `scope=openid%20email%20profile&` +
@@ -229,6 +233,10 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
 
 router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      return res.redirect('/login?error=google_oauth_not_configured');
+    }
+    
     const { code, error } = req.query;
     
     if (error) {
@@ -240,8 +248,6 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
       return res.redirect('/login?error=no_code');
     }
     
-    const clientId = process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID";
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "YOUR_GOOGLE_CLIENT_SECRET";
     const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
     
     // Exchange code for tokens
@@ -252,8 +258,8 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
       },
       body: new URLSearchParams({
         code: code as string,
-        client_id: clientId,
-        client_secret: clientSecret,
+        client_id: env.GOOGLE_CLIENT_ID!,
+        client_secret: env.GOOGLE_CLIENT_SECRET!,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
