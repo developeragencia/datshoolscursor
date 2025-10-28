@@ -99,35 +99,49 @@ const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunctio
 // Authentication routes
 router.post("/api/auth/register", async (req: AuthenticatedRequest, res: Response) => {
   try {
+    console.log("📝 Registro recebido:", { ...req.body, password: "[REDACTED]" });
+    
     const userData = insertUserSchema.parse(req.body);
+    console.log("✅ Validação do schema passou");
     
     // Verificar se usuário já existe
     const existingUser = userData.email ? await storage.getUserByEmail(userData.email) : null;
     if (existingUser) {
+      console.log("❌ Email já existe");
       return res.status(400).json({ error: "Email já cadastrado" });
     }
     
     // Verificar se username já existe
     const existingUsername = userData.username ? await storage.getUserByUsername(userData.username) : null;
     if (existingUsername) {
+      console.log("❌ Username já existe");
       return res.status(400).json({ error: "Nome de usuário já existe" });
     }
     
     // Hash password
+    console.log("🔐 Gerando hash da senha...");
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     
     // Create user
+    console.log("👤 Criando usuário no banco...");
     const user = await storage.createUser({
       ...userData,
       password: hashedPassword,
     });
 
+    console.log("✅ Usuário criado com sucesso:", user.id);
+    
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(400).json({ error: "Falha no cadastro" });
+  } catch (error: any) {
+    console.error("❌ Registration error:", error);
+    console.error("Detalhes do erro:", error.message);
+    if (error.errors) {
+      console.error("Erros de validação:", error.errors);
+      return res.status(400).json({ error: "Dados inválidos", details: error.errors });
+    }
+    res.status(400).json({ error: error.message || "Falha no cadastro" });
   }
 });
 
