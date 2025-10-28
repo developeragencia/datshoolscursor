@@ -147,18 +147,38 @@ router.post("/api/auth/register", async (req: AuthenticatedRequest, res: Respons
 
 router.post("/api/auth/login", async (req: AuthenticatedRequest, res: Response) => {
   try {
+    console.log("🔐 Login attempt:", { email: req.body.email });
+    
     const { email, password } = req.body;
     
+    if (!email || !password) {
+      console.log("❌ Email ou senha não fornecidos");
+      return res.status(400).json({ error: "Email e senha são obrigatórios" });
+    }
+    
+    console.log("🔍 Buscando usuário:", email);
     const user = await storage.getUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    
+    if (!user) {
+      console.log("❌ Usuário não encontrado");
+      return res.status(401).json({ error: "Credenciais inválidas" });
+    }
+    
+    console.log("✅ Usuário encontrado, verificando senha...");
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    
+    if (!passwordMatch) {
+      console.log("❌ Senha incorreta");
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
+    console.log("✅ Login bem-sucedido para:", user.email);
     req.session.userId = user.id.toString();
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
-  } catch (error) {
-    console.error("Login error:", error);
+  } catch (error: any) {
+    console.error("❌ Login error:", error);
+    console.error("Detalhes:", error.message);
     res.status(500).json({ error: "Falha no login" });
   }
 });
