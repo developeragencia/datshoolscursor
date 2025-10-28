@@ -21,7 +21,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const [stars, setStars] = useState<{ id: string; top: string; left: string; width: string; height: string; opacity: number }[]>([]);
+  const [stars, setStars] = useState<Array<{ id: string; top: string; left: string; width: string; height: string; opacity: number }>>([]);
   const [mounted, setMounted] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -29,53 +29,41 @@ export default function Login() {
 
   useEffect(() => {
     const generatedStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: `star-${i}-${Math.random()}`,
+      id: `star-${i}`,
       top: `${Math.random() * 100}%`,
       left: `${Math.random() * 100}%`,
       width: `${Math.random() * 2 + 1}px`,
       height: `${Math.random() * 2 + 1}px`,
       opacity: Math.random() * 0.7 + 0.3
     }));
-
     setStars(generatedStars);
     setMounted(true);
 
-    // Verificar se há erro na URL (redirect do Google OAuth)
+    // Verificar se há erro do Google OAuth na URL
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
     
     if (error) {
       const errorMessages: Record<string, string> = {
-        'google_oauth_not_configured': 'Google OAuth não está configurado corretamente',
-        'google_auth_failed': 'Falha na autenticação com Google',
+        'google_oauth_not_configured': 'Google OAuth não configurado',
+        'google_auth_failed': 'Falha na autenticação Google',
         'no_code': 'Código de autorização não recebido',
-        'token_fetch_failed': 'Falha ao obter tokens do Google',
         'token_exchange_failed': 'Falha na troca de tokens',
-        'no_access_token': 'Token de acesso não recebido',
-        'userinfo_fetch_failed': 'Falha ao buscar informações do usuário',
-        'no_email': 'Email não fornecido pelo Google',
-        'db_error': 'Erro ao acessar banco de dados',
-        'user_creation_failed': 'Falha ao criar usuário',
         'session_error': 'Erro ao criar sessão',
-        'google_auth_error': 'Erro no login com Google. Tente novamente.',
+        'google_auth_error': 'Erro no login Google',
       };
 
       toast({
-        title: "Erro no login com Google",
+        title: "Erro no login",
         description: errorMessages[error] || "Ocorreu um erro desconhecido",
         variant: "destructive",
       });
 
-      // Limpar o parâmetro de erro da URL
       window.history.replaceState({}, '', '/login');
     }
   }, [toast]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -86,21 +74,21 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
-      return apiRequest("/api/auth/login", "POST", data);
+      const response = await apiRequest("/api/auth/login", "POST", data);
+      return response;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
       toast({
-        title: "Login realizado com sucesso!",
-        description: `Bem-vindo de volta, ${data.firstName || data.username}!`,
+        title: "Login realizado!",
+        description: `Bem-vindo, ${data.firstName || data.username}!`,
       });
-      
-      setLocation("/dashboard");
+      setTimeout(() => setLocation("/dashboard"), 500);
     },
     onError: (error: any) => {
       toast({
         title: "Erro no login",
-        description: error.message || "Credenciais inválidas",
+        description: error.message || "Email ou senha incorretos",
         variant: "destructive",
       });
     },
@@ -114,9 +102,9 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-blue-900 to-indigo-800 text-white relative overflow-hidden">
       <div className="absolute top-4 left-4 z-20">
         <Link href="/">
-          <Button variant="ghost" className="text-white hover:bg-white/10" data-testid="button-back-home">
+          <Button variant="ghost" className="text-white hover:bg-white/10">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para a página inicial
+            Voltar
           </Button>
         </Link>
       </div>
@@ -146,79 +134,66 @@ export default function Login() {
             <div className="flex items-center justify-center h-full w-full relative">
               <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-blue-500/20 rounded-full ${mounted ? 'animate-pulse' : ''}`} />
               <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-500/20 rounded-full ${mounted ? 'animate-pulse' : ''}`} style={{ animationDelay: '1s' }} />
-
-              <RocketIcon
-                className={`text-white h-20 w-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${mounted ? 'animate-float' : ''}`}
-              />
-
+              <RocketIcon className={`text-white h-20 w-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${mounted ? 'animate-float' : ''}`} />
               <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-14 bg-gradient-to-t from-orange-500 to-transparent rounded-full ${mounted ? 'animate-flame' : ''}`} />
             </div>
           </div>
-
           <h1 className="text-3xl lg:text-4xl font-bold text-center lg:text-left">Dashtools</h1>
-          <p className="text-blue-100 mt-3 mb-6 text-center lg:text-left">A plataforma para rastreamento de UTM's</p>
+          <p className="text-blue-100 mt-3 mb-6 text-center lg:text-left">Plataforma de rastreamento de UTM's</p>
         </div>
 
         <div className="lg:w-3/5 w-full max-w-md">
           <div className="bg-white shadow-xl rounded-2xl p-8 text-gray-900">
-            <h2 className="text-2xl font-bold mb-6 text-center">Entrar na conta</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">Entrar</h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...register('email')}
+                  className={errors.email ? 'border-red-500' : ''}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Senha
+                </label>
+                <div className="relative">
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    {...register('email')}
-                    className={errors.email ? 'border-red-500' : 'border-gray-300'}
-                    data-testid="input-email"
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    {...register('password')}
+                    className={errors.password ? 'border-red-500' : ''}
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+                )}
+              </div>
 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                    Senha
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Checkbox id="rememberMe" {...register('rememberMe')} />
+                  <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+                    Lembrar-me
                   </label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      {...register('password')}
-                      className={errors.password ? 'border-red-500' : 'border-gray-300'}
-                      data-testid="input-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      data-testid="button-toggle-password"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Checkbox id="rememberMe" {...register('rememberMe')} />
-                    <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
-                      Lembrar-me
-                    </label>
-                  </div>
-                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                    Esqueceu a senha?
-                  </Link>
                 </div>
               </div>
 
@@ -226,7 +201,6 @@ export default function Login() {
                 type="submit" 
                 className="w-full h-11 bg-blue-600 hover:bg-blue-700" 
                 disabled={loginMutation.isPending}
-                data-testid="button-login"
               >
                 {loginMutation.isPending ? (
                   <>
@@ -263,20 +237,12 @@ export default function Login() {
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600">
                   Não tem uma conta?{' '}
-                  <Link href="/register" className="text-blue-600 hover:underline">
+                  <Link href="/register" className="text-blue-600 hover:underline font-medium">
                     Cadastre-se
                   </Link>
                 </p>
               </div>
             </form>
-
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="text-center text-sm text-gray-500">
-                <p>Para fins de teste, use:</p>
-                <p className="mt-1">Email: <span className="font-mono">admin@bueiro.digital</span></p>
-                <p>Senha: <span className="font-mono">admin123</span></p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -287,26 +253,21 @@ export default function Login() {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
           }
-
           .star {
             animation: twinkle linear infinite;
             animation-duration: calc(5s + (var(--i, 0) * 0.5s));
           }
-
           @keyframes float {
             0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
             50% { transform: translate(-50%, -50%) translateY(-10px); }
           }
-
           .animate-float {
             animation: float 6s ease-in-out infinite;
           }
-
           @keyframes flame {
             0%, 100% { height: 14px; opacity: 0.8; }
             50% { height: 18px; opacity: 1; }
           }
-
           .animate-flame {
             animation: flame 0.5s ease-in-out infinite;
           }
@@ -315,3 +276,4 @@ export default function Login() {
     </div>
   );
 }
+
