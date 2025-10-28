@@ -79,7 +79,9 @@ app.use((req, res, next) => {
     // Serve logos and other static files from client/public
     const path = await import("path");
     const fs = await import("fs/promises");
-    const publicPath = path.resolve(import.meta.dirname, "..", "client", "public");
+    const { fileURLToPath } = await import("url");
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const publicPath = path.resolve(__dirname, "..", "client", "public");
     
     app.use(async (req, res, next) => {
       // Serve static files from client/public/logos
