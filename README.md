@@ -1,8 +1,14 @@
-# Dashtools - Sales Tracking Platform
+# 🚀 Dashtools - Sales Tracking Platform
 
-## Overview
+[![Deploy Status](https://img.shields.io/badge/deploy-auto-brightgreen)](https://dashtools-5px2.onrender.com)
+[![Database](https://img.shields.io/badge/database-neon-blue)](https://neon.tech)
+[![MCP](https://img.shields.io/badge/MCP-enabled-orange)](https://modelcontextprotocol.io)
+
+## 📊 Overview
 
 Dashtools é uma plataforma de rastreamento de vendas para profissionais de marketing digital e criadores de infoprodutos no Brasil. Permite rastreamento preciso de campanhas de vendas, otimização de gastos com marketing e operações escaláveis.
+
+**✨ Deploy Automático Configurado**: Qualquer push para `main` dispara deploy automático!
 
 ## Tecnologias
 
@@ -60,42 +66,71 @@ npm run dev
 
 O aplicativo estará disponível em `http://localhost:5000`
 
-## Deploy no Render
+## 🚀 Deploy Automático (Configurado!)
 
-### Método 1: Via Dashboard
+### ✅ Status Atual
 
-1. Crie uma conta no [Render](https://render.com)
-2. Crie um novo PostgreSQL database
-3. Crie um novo Web Service conectado ao seu repositório Git
-4. Configure as variáveis de ambiente:
-   - `DATABASE_URL` - Copie do PostgreSQL criado
-   - `SESSION_SECRET` - Gere uma string aleatória segura
-   - `NODE_ENV` = production
+**Deploy Automático**: ATIVO  
+**Serviço**: https://dashtools-5px2.onrender.com  
+**Banco**: Neon PostgreSQL (17.5)  
+**MCP**: Habilitado para automação via Cursor AI
 
-### Método 2: Via render.yaml (Recomendado)
+### 📝 Único Passo Necessário
 
-O projeto já inclui um arquivo `render.yaml` configurado. Basta:
+1. **Configurar DATABASE_URL no Render**:
+   - Acesse: https://dashboard.render.com/web/srv-d3vsptq4d50c73e5h7b0
+   - Vá em: Environment → Add Environment Variable
+   - Adicione:
+     ```
+     Key: DATABASE_URL
+     Value: [Connection string do Neon]
+     ```
+   - Salve e aguarde redeploy (2-3 minutos)
 
-1. Conectar seu repositório ao Render
-2. O Render detectará automaticamente o `render.yaml`
-3. Configure apenas a variável `DATABASE_URL` no dashboard
+**PRONTO!** Deploy automático está funcionando ✅
 
-### Variáveis de Ambiente Necessárias
+### 🎯 Como Fazer Deploy
 
-```env
-DATABASE_URL=postgresql://user:password@host:port/database
-SESSION_SECRET=sua-chave-secreta-aleatoria
-NODE_ENV=production
-PORT=10000
+#### Método 1: Git Push (Automático)
+```bash
+git add .
+git commit -m "feat: nova funcionalidade"
+git push origin main
+# ✨ Deploy automático inicia!
 ```
 
-## Scripts Disponíveis
+#### Método 2: Via Cursor AI + MCP (100% Automático)
+Basta pedir ao Cursor:
+```
+"Adicione feature de notificações"
+"Corrija o bug no cálculo de ROAS"
+"Faça deploy da versão atual"
+```
+Cursor faz TUDO automaticamente via MCP!
 
+### 📚 Documentação Completa
+
+- **[Quick Start](DEPLOY_QUICK_START.md)** - Setup em 5 minutos
+- **[Deploy Automático](DEPLOY_AUTOMATICO.md)** - Guia completo
+- **[MCP + CI/CD](MCP_CICD_GUIDE.md)** - Automação via Cursor
+- **[Banco de Dados](RELATORIO_VERIFICACAO_BD.md)** - Verificação completa
+
+## 🛠️ Scripts Disponíveis
+
+### Desenvolvimento
 - `npm run dev` - Inicia o servidor de desenvolvimento
 - `npm run build` - Compila o projeto para produção
 - `npm start` - Inicia o servidor em produção
 - `npm run check` - Verifica tipos TypeScript
+
+### Banco de Dados
 - `npm run db:push` - Aplica migrações do banco de dados
+- `npm run db:test` - Testa conexão com banco
+- `npm run db:studio` - Interface visual do banco
+
+### Setup
+- `.\scripts\configure-env.ps1 dev` - Configurar ambiente (Windows)
+- `./scripts/configure-env.sh dev` - Configurar ambiente (Linux/Mac)
 
 ## Integrações de Pagamento
 

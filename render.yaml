@@ -5,13 +5,21 @@ services:
     env: node
     region: oregon
     plan: starter
+    branch: main
+    repo: https://github.com/developeragencia/datshoolscursor
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /
+    # Deploy Automático - Qualquer push na branch main dispara deploy
     autoDeploy: true
+    # Configurações de Performance
+    numInstances: 1
+    maxShutdownDelaySeconds: 30
     envVars:
       - key: NODE_ENV
         value: production
+      # DATABASE_URL deve ser configurado manualmente no dashboard
+      # Valor: postgresql://neondb_owner:npg_Gnqe4wZvmc1B@ep-autumn-bonus-aeacerp5-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
@@ -22,6 +30,7 @@ services:
         value: --max-old-space-size=2048
       - key: NPM_CONFIG_PRODUCTION
         value: false
+      # Google OAuth (opcional)
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
