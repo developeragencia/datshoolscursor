@@ -394,38 +394,27 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
       console.log('✅ Usuário existente encontrado:', user.id);
     }
     
-    // Log user in - ESTRATÉGIA SIMPLIFICADA
+    // CRIAR SESSÃO DIRETAMENTE - SEM REGENERAR
     console.log('🔐 Criando sessão para usuário:', user.id);
+    console.log('📍 Session ID atual:', req.sessionID);
+    
+    // Definir userId na sessão EXISTENTE
     req.session.userId = user.id.toString();
     
-    // Regenerar sessão para garantir cookie fresco
-    const oldSessionId = req.sessionID;
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error("❌ Erro ao regenerar sessão:", err);
-        // Continuar mesmo com erro de regeneração
+    // Salvar sessão DIRETAMENTE sem regenerar
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error("❌ Erro ao salvar sessão:", saveErr);
+        return res.redirect('/login?error=session_save_failed');
       }
       
-      // Redefine userId após regeneração
-      req.session.userId = user.id.toString();
+      console.log('✅ Sessão salva com sucesso');
+      console.log('✅ Session ID:', req.sessionID);
+      console.log('✅ User ID salvo na sessão:', req.session.userId);
+      console.log('✅ Cookie connect.sid enviado ao navegador');
       
-      // Salvar sessão e redirecionar DIRETAMENTE
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("❌ Erro ao salvar sessão:", saveErr);
-          return res.redirect('/login?error=session_save_failed');
-        }
-        
-        console.log('✅ Sessão salva com sucesso');
-        console.log('✅ Old Session ID:', oldSessionId);
-        console.log('✅ New Session ID:', req.sessionID);
-        console.log('✅ User ID na sessão:', req.session.userId);
-        console.log('✅ Cookie será enviado com nome: connect.sid');
-        
-        // Redirect SIMPLES E DIRETO - sem página intermediária
-        // O cookie já foi setado no header da resposta
-        res.redirect('/dashboard?oauth=success');
-      });
+      // Redirect DIRETO para dashboard
+      res.redirect('/dashboard?oauth=success');
     });
   } catch (error) {
     console.error("❌ Google OAuth callback error (catch geral):", error);
