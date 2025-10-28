@@ -40,24 +40,36 @@ export default function Dashboard() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Detectar se veio do OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthSuccess = urlParams.get('oauth');
+    
+    if (oauthSuccess === 'success') {
+      console.log('🔐 Login OAuth detectado, forçando refetch...');
+      // Limpar URL
+      window.history.replaceState({}, '', '/dashboard');
+      // Invalidar cache
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    }
+  }, [queryClient]);
 
-  // Fetch user data com retry agressivo
+  // Fetch user data com retry MUITO agressivo
   const { data: user, isLoading: userLoading, error, refetch } = useQuery({
     queryKey: ["/api/auth/me"],
-    retry: 3, // Tentar 3 vezes
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Backoff exponencial
-    refetchOnMount: 'always', // Sempre buscar ao montar
-    staleTime: 0, // Considerar sempre desatualizado
+    retry: 5, // Tentar 5 vezes (aumentado)
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 5000), // Mais rápido: 500ms, 1s, 2s, 4s, 5s
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
-  // Força refetch se não tiver usuário após 1 segundo
+  // Força refetch contínuo até conseguir usuário
   useEffect(() => {
     if (!userLoading && !user && !error) {
       const timer = setTimeout(() => {
         console.log('🔄 Tentando buscar usuário novamente...');
         refetch();
-      }, 1000);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [userLoading, user, error, refetch]);
