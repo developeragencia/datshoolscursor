@@ -239,7 +239,13 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
     return res.redirect('/login?error=google_oauth_not_configured');
   }
   
-  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  // Detectar protocolo corretamente (necessário para Render/proxies)
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.get('host');
+  const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+  
+  console.log('🔐 Iniciando Google OAuth');
+  console.log('📍 Redirect URI:', redirectUri);
   
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${env.GOOGLE_CLIENT_ID}&` +
@@ -273,8 +279,11 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
       return res.redirect('/login?error=no_code');
     }
     
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
-    console.log('📍 Redirect URI:', redirectUri);
+    // Detectar protocolo corretamente (necessário para Render/proxies)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+    console.log('📍 Redirect URI no callback:', redirectUri);
     
     // Exchange code for tokens
     console.log('🔄 Trocando código por tokens...');

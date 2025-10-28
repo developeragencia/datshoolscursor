@@ -6,6 +6,10 @@ import { setupVite, serveStatic, log } from "./vite";
 import { env } from "./env";
 
 const app = express();
+
+// Trust proxy - necessário para detectar HTTPS corretamente no Render
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
