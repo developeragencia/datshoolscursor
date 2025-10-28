@@ -32,11 +32,17 @@ function validateEnv() {
     console.warn('⚠️  SESSION_SECRET not set, using generated default (not recommended for production)');
   }
 
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.warn('⚠️  GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set. Google OAuth will not work.');
+  }
+
   return {
     DATABASE_URL: process.env.DATABASE_URL!,
     SESSION_SECRET: process.env.SESSION_SECRET || generateSessionSecret(),
     NODE_ENV: process.env.NODE_ENV || 'development',
     PORT: parseInt(process.env.PORT || '5000', 10),
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
   };
 }
 
@@ -58,4 +64,5 @@ console.log(`   NODE_ENV: ${env.NODE_ENV}`);
 console.log(`   PORT: ${env.PORT}`);
 console.log(`   DATABASE_URL: ${env.DATABASE_URL.substring(0, 30)}...`);
 console.log(`   SESSION_SECRET: ${env.SESSION_SECRET.substring(0, 10)}...`);
-
+console.log(`   GOOGLE_CLIENT_ID: ${env.GOOGLE_CLIENT_ID ? 'Set ✓' : 'Not set ✗'}`);
+console.log(`   GOOGLE_CLIENT_SECRET: ${env.GOOGLE_CLIENT_SECRET ? 'Set ✓' : 'Not set ✗'}`);
