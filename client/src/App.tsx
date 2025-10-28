@@ -93,13 +93,13 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Router />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
   );
 }
 
