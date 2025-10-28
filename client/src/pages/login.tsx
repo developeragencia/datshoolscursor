@@ -1,278 +1,187 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Loader2, RocketIcon, ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Eye, EyeOff, LogIn, Mail, Lock, Chrome } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
-  password: z.string().min(1, "Senha é obrigatória"),
-  rememberMe: z.boolean().optional(),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [stars, setStars] = useState<Array<{ id: string; top: string; left: string; width: string; height: string; opacity: number }>>([]);
-  const [mounted, setMounted] = useState(false);
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Check if already logged in
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+  });
 
   useEffect(() => {
-    const generatedStars = Array.from({ length: 50 }).map((_, i) => ({
-      id: `star-${i}`,
-      top: `${Math.random() * 100}%`,
-      left: `${Math.random() * 100}%`,
-      width: `${Math.random() * 2 + 1}px`,
-      height: `${Math.random() * 2 + 1}px`,
-      opacity: Math.random() * 0.7 + 0.3
-    }));
-    setStars(generatedStars);
-    setMounted(true);
-
-    // Verificar se há erro do Google OAuth na URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const error = urlParams.get('error');
-    
-    if (error) {
-      const errorMessages: Record<string, string> = {
-        'google_oauth_not_configured': 'Google OAuth não configurado',
-        'google_auth_failed': 'Falha na autenticação Google',
-        'no_code': 'Código de autorização não recebido',
-        'token_exchange_failed': 'Falha na troca de tokens',
-        'session_error': 'Erro ao criar sessão',
-        'google_auth_error': 'Erro no login Google',
-      };
-
-      toast({
-        title: "Erro no login",
-        description: errorMessages[error] || "Ocorreu um erro desconhecido",
-        variant: "destructive",
-      });
-
-      window.history.replaceState({}, '', '/login');
+    if (user) {
+      setLocation("/dashboard");
     }
-  }, [toast]);
+  }, [user, setLocation]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      rememberMe: false,
-    },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginForm) => {
+  const onSubmit = async (data: LoginForm) => {
+    setIsLoading(true);
+    setError("");
+    
+    try {
       const response = await apiRequest("/api/auth/login", "POST", data);
-      return response;
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/auth/me"], data);
-      toast({
-        title: "Login realizado!",
-        description: `Bem-vindo, ${data.firstName || data.username}!`,
-      });
-      setTimeout(() => setLocation("/dashboard"), 500);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro no login",
-        description: error.message || "Email ou senha incorretos",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: LoginForm) => {
-    loginMutation.mutate(data);
+      if (response) {
+        window.location.href = "/dashboard";
+      }
+    } catch (err: any) {
+      setError(err.message || "Erro ao fazer login");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-r from-blue-900 to-indigo-800 text-white relative overflow-hidden">
-      <div className="absolute top-4 left-4 z-20">
-        <Link href="/">
-          <Button variant="ghost" className="text-white hover:bg-white/10">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </Link>
-      </div>
-
-      <div className="absolute inset-0">
-        {stars.map((star) => (
-          <div
-            key={star.id}
-            className="star absolute bg-white rounded-full"
-            style={{
-              top: star.top,
-              left: star.left,
-              width: star.width,
-              height: star.height,
-              opacity: star.opacity,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="absolute top-[15%] left-[10%] w-40 h-40 rounded-full bg-gradient-to-br from-purple-500 to-purple-800 opacity-20 blur-md" />
-      <div className="absolute bottom-[10%] right-[15%] w-60 h-60 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 opacity-20 blur-md" />
-
-      <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center justify-center gap-8 relative z-10">
-        <div className="lg:w-2/5 flex flex-col items-center lg:items-start">
-          <div className="relative h-48 w-48 mb-6">
-            <div className="flex items-center justify-center h-full w-full relative">
-              <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-blue-500/20 rounded-full ${mounted ? 'animate-pulse' : ''}`} />
-              <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-500/20 rounded-full ${mounted ? 'animate-pulse' : ''}`} style={{ animationDelay: '1s' }} />
-              <RocketIcon className={`text-white h-20 w-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${mounted ? 'animate-float' : ''}`} />
-              <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-14 bg-gradient-to-t from-orange-500 to-transparent rounded-full ${mounted ? 'animate-flame' : ''}`} />
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="w-full max-w-md">
+        {/* Card Principal */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6 backdrop-blur-lg bg-opacity-95">
+          {/* Logo e Título */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
+              <LogIn className="w-8 h-8 text-white" />
             </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Bem-vindo de volta!
+            </h1>
+            <p className="text-gray-600">
+              Faça login para acessar sua conta
+            </p>
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-center lg:text-left">Dashtools</h1>
-          <p className="text-blue-100 mt-3 mb-6 text-center lg:text-left">Plataforma de rastreamento de UTM's</p>
-        </div>
 
-        <div className="lg:w-3/5 w-full max-w-md">
-          <div className="bg-white shadow-xl rounded-2xl p-8 text-gray-900">
-            <h2 className="text-2xl font-bold mb-6 text-center">Entrar</h2>
+          {/* Erro */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <Input
-                  id="email"
+          {/* Formulário */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  {...register("email")}
                   type="email"
                   placeholder="seu@email.com"
-                  {...register('email')}
-                  className={errors.email ? 'border-red-500' : ''}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-                )}
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email.message}</p>
+              )}
+            </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Senha
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    {...register('password')}
-                    className={errors.password ? 'border-red-500' : ''}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-                )}
+            {/* Senha */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  {...register("password")}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm">{errors.password.message}</p>
+              )}
+            </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Checkbox id="rememberMe" {...register('rememberMe')} />
-                  <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
-                    Lembrar-me
-                  </label>
-                </div>
-              </div>
+            {/* Botão Login */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isLoading ? "Entrando..." : "Entrar"}
+            </button>
+          </form>
 
-              <Button 
-                type="submit" 
-                className="w-full h-11 bg-blue-600 hover:bg-blue-700" 
-                disabled={loginMutation.isPending}
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">ou continue com</span>
+            </div>
+          </div>
+
+          {/* Google Login */}
+          <a
+            href="/api/auth/google"
+            className="w-full flex items-center justify-center gap-3 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 group"
+          >
+            <Chrome className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+            <span className="font-medium text-gray-700 group-hover:text-gray-900">
+              Entrar com Google
+            </span>
+          </a>
+
+          {/* Link para Cadastro */}
+          <div className="text-center">
+            <p className="text-gray-600">
+              Não tem uma conta?{" "}
+              <button
+                onClick={() => setLocation("/register")}
+                className="text-blue-600 font-semibold hover:text-purple-600 transition-colors"
               >
-                {loginMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Ou continue com</span>
-                </div>
-              </div>
-
-              <a
-                href="/api/auth/google"
-                className="w-full h-11 flex items-center justify-center gap-3 border-2 border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span className="text-gray-700 font-medium">Entrar com Google</span>
-              </a>
-
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600">
-                  Não tem uma conta?{' '}
-                  <Link href="/register" className="text-blue-600 hover:underline font-medium">
-                    Cadastre-se
-                  </Link>
-                </p>
-              </div>
-            </form>
+                Criar conta
+              </button>
+            </p>
           </div>
         </div>
-      </div>
 
-      {mounted && (
-        <style>{`
-          @keyframes twinkle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-          }
-          .star {
-            animation: twinkle linear infinite;
-            animation-duration: calc(5s + (var(--i, 0) * 0.5s));
-          }
-          @keyframes float {
-            0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
-            50% { transform: translate(-50%, -50%) translateY(-10px); }
-          }
-          .animate-float {
-            animation: float 6s ease-in-out infinite;
-          }
-          @keyframes flame {
-            0%, 100% { height: 14px; opacity: 0.8; }
-            50% { height: 18px; opacity: 1; }
-          }
-          .animate-flame {
-            animation: flame 0.5s ease-in-out infinite;
-          }
-        `}</style>
-      )}
+        {/* Footer */}
+        <div className="text-center mt-6 text-sm text-gray-600">
+          <p>© 2025 Dashtools. Todos os direitos reservados.</p>
+        </div>
+      </div>
     </div>
   );
 }
