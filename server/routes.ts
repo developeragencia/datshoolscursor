@@ -131,7 +131,7 @@ router.post("/api/auth/register", async (req: AuthenticatedRequest, res: Respons
     });
 
     console.log("✅ Usuário criado com sucesso:", user.id);
-    
+
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
@@ -164,7 +164,7 @@ router.post("/api/auth/login", async (req: AuthenticatedRequest, res: Response) 
       console.log("❌ Usuário não encontrado");
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
-    
+
     console.log("✅ Usuário encontrado, verificando senha...");
     const passwordMatch = await bcrypt.compare(password, user.password);
     
@@ -233,24 +233,30 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
 
 router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: Response) => {
   try {
+    console.log('🔐 Google OAuth callback iniciado');
+    
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      console.error('❌ Credenciais Google OAuth não configuradas');
       return res.redirect('/login?error=google_oauth_not_configured');
     }
     
     const { code, error } = req.query;
     
     if (error) {
-      console.error("Google OAuth error:", error);
+      console.error("❌ Google OAuth error:", error);
       return res.redirect('/login?error=google_auth_failed');
     }
     
     if (!code) {
+      console.error("❌ Código de autorização não recebido");
       return res.redirect('/login?error=no_code');
     }
     
     const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    console.log('📍 Redirect URI:', redirectUri);
     
     // Exchange code for tokens
+    console.log('🔄 Trocando código por tokens...');
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -268,11 +274,15 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     const tokens = await tokenResponse.json();
     
     if (tokens.error) {
-      console.error("Token exchange error:", tokens.error);
+      console.error("❌ Token exchange error:", tokens.error);
+      console.error("❌ Token response:", JSON.stringify(tokens, null, 2));
       return res.redirect('/login?error=token_exchange_failed');
     }
     
+    console.log('✅ Tokens recebidos com sucesso');
+    
     // Get user info from Google
+    console.log('👤 Buscando informações do usuário...');
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
         Authorization: `Bearer ${tokens.access_token}`,
@@ -280,11 +290,13 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     });
     
     const googleUser = await userInfoResponse.json();
+    console.log('✅ Informações do usuário recebidas:', googleUser.email);
     
     // Check if user exists
     let user = await storage.getUserByEmail(googleUser.email);
     
     if (!user) {
+      console.log('👤 Criando novo usuário:', googleUser.email);
       // Create new user
       const randomPassword = Math.random().toString(36).slice(-12);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
@@ -298,15 +310,21 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
         planType: 'gratuito',
         userType: 'client',
       });
+      console.log('✅ Novo usuário criado:', user.id);
+    } else {
+      console.log('✅ Usuário existente encontrado:', user.id);
     }
     
     // Log user in
     req.session.userId = user.id.toString();
+    console.log('✅ Sessão criada para usuário:', user.id);
     
     // Redirect to dashboard
+    console.log('🔄 Redirecionando para dashboard');
     res.redirect('/dashboard');
   } catch (error) {
-    console.error("Google OAuth callback error:", error);
+    console.error("❌ Google OAuth callback error:", error);
+    console.error("❌ Stack trace:", (error as Error).stack);
     res.redirect('/login?error=google_auth_error');
   }
 });
