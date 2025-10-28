@@ -261,6 +261,12 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
 router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: Response) => {
   try {
     console.log('🔐 Google OAuth callback iniciado');
+    console.log('📝 Query params:', req.query);
+    console.log('📝 Headers:', {
+      host: req.get('host'),
+      protocol: req.protocol,
+      'x-forwarded-proto': req.headers['x-forwarded-proto']
+    });
     
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
       console.error('❌ Credenciais Google OAuth não configuradas');
@@ -287,80 +293,120 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     
     // Exchange code for tokens
     console.log('🔄 Trocando código por tokens...');
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        code: code as string,
-        client_id: env.GOOGLE_CLIENT_ID!,
-        client_secret: env.GOOGLE_CLIENT_SECRET!,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
+    let tokenResponse;
+    try {
+      tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          code: code as string,
+          client_id: env.GOOGLE_CLIENT_ID!,
+          client_secret: env.GOOGLE_CLIENT_SECRET!,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+    } catch (fetchError) {
+      console.error("❌ Erro ao fazer requisição de tokens:", fetchError);
+      return res.redirect('/login?error=token_fetch_failed');
+    }
     
     const tokens = await tokenResponse.json();
     
     if (tokens.error) {
       console.error("❌ Token exchange error:", tokens.error);
-      console.error("❌ Token response:", JSON.stringify(tokens, null, 2));
+      console.error("❌ Token response completo:", JSON.stringify(tokens, null, 2));
       return res.redirect('/login?error=token_exchange_failed');
+    }
+    
+    if (!tokens.access_token) {
+      console.error("❌ Access token não recebido");
+      return res.redirect('/login?error=no_access_token');
     }
     
     console.log('✅ Tokens recebidos com sucesso');
     
     // Get user info from Google
     console.log('👤 Buscando informações do usuário...');
-    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
-    });
+    let userInfoResponse;
+    try {
+      userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+    } catch (fetchError) {
+      console.error("❌ Erro ao buscar informações do usuário:", fetchError);
+      return res.redirect('/login?error=userinfo_fetch_failed');
+    }
     
     const googleUser = await userInfoResponse.json();
-    console.log('✅ Informações do usuário recebidas:', googleUser.email);
+    console.log('✅ Informações do usuário recebidas:', { email: googleUser.email, name: googleUser.name });
+    
+    if (!googleUser.email) {
+      console.error("❌ Email não recebido do Google");
+      return res.redirect('/login?error=no_email');
+    }
     
     // Check if user exists
-    let user = await storage.getUserByEmail(googleUser.email);
+    let user;
+    try {
+      user = await storage.getUserByEmail(googleUser.email);
+    } catch (dbError) {
+      console.error("❌ Erro ao buscar usuário no banco:", dbError);
+      return res.redirect('/login?error=db_error');
+    }
     
     if (!user) {
       console.log('👤 Criando novo usuário:', googleUser.email);
-      // Create new user
-      const randomPassword = Math.random().toString(36).slice(-12);
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
-      
-      user = await storage.createUser({
-        email: googleUser.email,
-        username: googleUser.email.split('@')[0] + Math.random().toString(36).slice(-4),
-        firstName: googleUser.given_name || googleUser.name || 'User',
-        lastName: googleUser.family_name || '',
-        password: hashedPassword,
-        planType: 'gratuito',
-      });
-      console.log('✅ Novo usuário criado:', user.id);
+      try {
+        // Create new user
+        const randomPassword = Math.random().toString(36).slice(-12);
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        const username = googleUser.email.split('@')[0] + Math.random().toString(36).slice(-4);
+        
+        user = await storage.createUser({
+          email: googleUser.email,
+          username: username,
+          firstName: googleUser.given_name || googleUser.name?.split(' ')[0] || 'Usuário',
+          lastName: googleUser.family_name || googleUser.name?.split(' ').slice(1).join(' ') || '',
+          password: hashedPassword,
+          planType: 'gratuito',
+        });
+        console.log('✅ Novo usuário criado:', user.id);
+      } catch (createError) {
+        console.error("❌ Erro ao criar usuário:", createError);
+        console.error("❌ Detalhes do erro:", (createError as Error).message);
+        return res.redirect('/login?error=user_creation_failed');
+      }
     } else {
       console.log('✅ Usuário existente encontrado:', user.id);
     }
     
     // Log user in
+    console.log('🔐 Criando sessão para usuário:', user.id);
     req.session.userId = user.id.toString();
-    console.log('✅ Sessão criada para usuário:', user.id);
     
     // Salvar sessão antes de redirecionar
     req.session.save((err) => {
       if (err) {
         console.error("❌ Erro ao salvar sessão:", err);
+        console.error("❌ Detalhes do erro:", err.message);
         return res.redirect('/login?error=session_error');
       }
       
       // Redirect to dashboard
+      console.log('✅ Sessão salva com sucesso');
       console.log('🔄 Redirecionando para dashboard');
       res.redirect('/dashboard');
     });
   } catch (error) {
-    console.error("❌ Google OAuth callback error:", error);
+    console.error("❌ Google OAuth callback error (catch geral):", error);
+    console.error("❌ Tipo de erro:", (error as Error).name);
+    console.error("❌ Mensagem:", (error as Error).message);
     console.error("❌ Stack trace:", (error as Error).stack);
     res.redirect('/login?error=google_auth_error');
   }

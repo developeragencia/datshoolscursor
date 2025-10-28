@@ -39,7 +39,37 @@ export default function Login() {
 
     setStars(generatedStars);
     setMounted(true);
-  }, []);
+
+    // Verificar se há erro na URL (redirect do Google OAuth)
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        'google_oauth_not_configured': 'Google OAuth não está configurado corretamente',
+        'google_auth_failed': 'Falha na autenticação com Google',
+        'no_code': 'Código de autorização não recebido',
+        'token_fetch_failed': 'Falha ao obter tokens do Google',
+        'token_exchange_failed': 'Falha na troca de tokens',
+        'no_access_token': 'Token de acesso não recebido',
+        'userinfo_fetch_failed': 'Falha ao buscar informações do usuário',
+        'no_email': 'Email não fornecido pelo Google',
+        'db_error': 'Erro ao acessar banco de dados',
+        'user_creation_failed': 'Falha ao criar usuário',
+        'session_error': 'Erro ao criar sessão',
+        'google_auth_error': 'Erro no login com Google. Tente novamente.',
+      };
+
+      toast({
+        title: "Erro no login com Google",
+        description: errorMessages[error] || "Ocorreu um erro desconhecido",
+        variant: "destructive",
+      });
+
+      // Limpar o parâmetro de erro da URL
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [toast]);
 
   const {
     register,
