@@ -15,7 +15,9 @@ import {
   Activity,
   Target,
   Zap,
-  Calendar
+  Calendar,
+  Settings,
+  Bell
 } from "lucide-react";
 
 interface DashboardStats {

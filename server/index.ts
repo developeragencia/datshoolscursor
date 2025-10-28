@@ -30,7 +30,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production', // Enable secure cookies in production
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax', // Permitir cookies em redirecionamentos
     maxAge: sessionTtl,
   },
 }));
