@@ -78,9 +78,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // Só redirecionar após múltiplas tentativas falharem
     if (!userLoading && !user && error) {
-      console.log('❌ Usuário não autenticado, redirecionando para login');
-      setLocation("/login");
+      console.log('❌ Usuário não autenticado após tentativas');
+      const timer = setTimeout(() => {
+        console.log('🔄 Redirecionando para login');
+        setLocation("/login");
+      }, 2000); // Aguardar 2 segundos antes de redirecionar
+      return () => clearTimeout(timer);
     }
   }, [userLoading, user, error, setLocation]);
 

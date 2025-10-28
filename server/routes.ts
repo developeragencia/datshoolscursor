@@ -142,10 +142,10 @@ router.post("/api/auth/register", async (req: AuthenticatedRequest, res: Respons
         console.error("❌ Erro ao salvar sessão:", err);
         // Mesmo com erro na sessão, retornar sucesso no cadastro
       }
-      
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
     });
   } catch (error: any) {
     console.error("❌ Registration error:", error);
@@ -195,8 +195,8 @@ router.post("/api/auth/login", async (req: AuthenticatedRequest, res: Response) 
         return res.status(500).json({ error: "Erro ao criar sessão" });
       }
       
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+    const { password: _, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
     });
   } catch (error: any) {
     console.error("❌ Login error:", error);
@@ -304,18 +304,18 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     let tokenResponse;
     try {
       tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          code: code as string,
-          client_id: env.GOOGLE_CLIENT_ID!,
-          client_secret: env.GOOGLE_CLIENT_SECRET!,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        }),
-      });
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: env.GOOGLE_CLIENT_ID!,
+        client_secret: env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
     } catch (fetchError) {
       console.error("❌ Erro ao fazer requisição de tokens:", fetchError);
       return res.redirect('/login?error=token_fetch_failed');
@@ -341,10 +341,10 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     let userInfoResponse;
     try {
       userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      });
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
     } catch (fetchError) {
       console.error("❌ Erro ao buscar informações do usuário:", fetchError);
       return res.redirect('/login?error=userinfo_fetch_failed');
@@ -370,21 +370,21 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     if (!user) {
       console.log('👤 Criando novo usuário:', googleUser.email);
       try {
-        // Create new user
-        const randomPassword = Math.random().toString(36).slice(-12);
-        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+      // Create new user
+      const randomPassword = Math.random().toString(36).slice(-12);
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
         
         const username = googleUser.email.split('@')[0] + Math.random().toString(36).slice(-4);
-        
-        user = await storage.createUser({
-          email: googleUser.email,
+      
+      user = await storage.createUser({
+        email: googleUser.email,
           username: username,
           firstName: googleUser.given_name || googleUser.name?.split(' ')[0] || 'Usuário',
           lastName: googleUser.family_name || googleUser.name?.split(' ').slice(1).join(' ') || '',
-          password: hashedPassword,
-          planType: 'gratuito',
-        });
-        console.log('✅ Novo usuário criado:', user.id);
+        password: hashedPassword,
+        planType: 'gratuito',
+      });
+      console.log('✅ Novo usuário criado:', user.id);
       } catch (createError) {
         console.error("❌ Erro ao criar usuário:", createError);
         console.error("❌ Detalhes do erro:", (createError as Error).message);
@@ -398,84 +398,115 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     console.log('🔐 Criando sessão para usuário:', user.id);
     req.session.userId = user.id.toString();
     
-    // Regenerar session para garantir novo cookie
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error("❌ Erro ao regenerar sessão:", err);
+    // Salvar sessão COM callback que aguarda confirmação
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error("❌ Erro ao salvar sessão:", saveErr);
+        return res.redirect('/login?error=session_error');
       }
       
-      // Definir userId novamente após regenerar
-      req.session.userId = user.id.toString();
+      console.log('✅ Sessão salva com sucesso');
+      console.log('✅ Session ID:', req.sessionID);
+      console.log('✅ User ID na sessão:', req.session.userId);
+      console.log('✅ Cookie name:', req.sessionID ? 'connect.sid' : 'undefined');
       
-      // Salvar sessão
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("❌ Erro ao salvar sessão:", saveErr);
-          console.error("❌ Detalhes do erro:", saveErr.message);
-          return res.redirect('/login?error=session_error');
-        }
-        
-        console.log('✅ Sessão salva com sucesso');
-        console.log('✅ Session ID:', req.sessionID);
-        console.log('✅ User ID na sessão:', req.session.userId);
-        
-        // Enviar página HTML que faz reload forçado
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Login Realizado</title>
-              <meta charset="utf-8">
-              <style>
-                body {
-                  font-family: system-ui, -apple-system, sans-serif;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  min-height: 100vh;
-                  margin: 0;
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  color: white;
+      // Enviar página HTML que aguarda e testa a sessão antes de redirecionar
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Autenticando...</title>
+            <meta charset="utf-8">
+            <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+              }
+              .box {
+                text-align: center;
+                padding: 3rem;
+                background: rgba(255,255,255,0.1);
+                border-radius: 1rem;
+                backdrop-filter: blur(10px);
+                max-width: 400px;
+              }
+              .spinner {
+                border: 4px solid rgba(255,255,255,0.3);
+                border-top-color: white;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 1.5rem;
+              }
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+              h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+              p { margin: 0.5rem 0; opacity: 0.9; font-size: 0.9rem; }
+              .status { font-size: 0.8rem; opacity: 0.7; margin-top: 1rem; }
+            </style>
+          </head>
+          <body>
+            <div class="box">
+              <div class="spinner"></div>
+              <h1>✅ Autenticado com sucesso!</h1>
+              <p id="message">Verificando sessão...</p>
+              <p class="status" id="status"></p>
+            </div>
+            <script>
+              let attempts = 0;
+              const maxAttempts = 3;
+              
+              async function checkSession() {
+                attempts++;
+                document.getElementById('status').textContent = \`Tentativa \${attempts}/\${maxAttempts}\`;
+                
+                try {
+                  const res = await fetch('/api/auth/me', {
+                    credentials: 'include',
+                    headers: { 'Cache-Control': 'no-cache' }
+                  });
+                  
+                  if (res.ok) {
+                    const user = await res.json();
+                    console.log('✅ Sessão válida, usuário:', user.email);
+                    document.getElementById('message').textContent = 'Redirecionando para o painel...';
+                    setTimeout(() => {
+                      window.location.replace('/dashboard');
+                    }, 300);
+                  } else if (attempts < maxAttempts) {
+                    console.log('⏳ Sessão ainda não disponível, tentando novamente...');
+                    setTimeout(checkSession, 1000);
+                  } else {
+                    console.error('❌ Sessão não criada após', maxAttempts, 'tentativas');
+                    document.getElementById('message').textContent = 'Erro ao validar sessão';
+                    setTimeout(() => {
+                      window.location.replace('/login?error=session_timeout');
+                    }, 2000);
+                  }
+                } catch (error) {
+                  console.error('❌ Erro ao verificar sessão:', error);
+                  if (attempts < maxAttempts) {
+                    setTimeout(checkSession, 1000);
+                  } else {
+                    window.location.replace('/login?error=session_check_failed');
+                  }
                 }
-                .box {
-                  text-align: center;
-                  padding: 3rem;
-                  background: rgba(255,255,255,0.1);
-                  border-radius: 1rem;
-                  backdrop-filter: blur(10px);
-                }
-                .spinner {
-                  border: 4px solid rgba(255,255,255,0.3);
-                  border-top-color: white;
-                  border-radius: 50%;
-                  width: 50px;
-                  height: 50px;
-                  animation: spin 1s linear infinite;
-                  margin: 0 auto 1.5rem;
-                }
-                @keyframes spin {
-                  to { transform: rotate(360deg); }
-                }
-                h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
-                p { margin: 0; opacity: 0.9; font-size: 0.9rem; }
-              </style>
-            </head>
-            <body>
-              <div class="box">
-                <div class="spinner"></div>
-                <h1>✅ Login realizado!</h1>
-                <p>Redirecionando para o painel...</p>
-              </div>
-              <script>
-                // Aguardar cookie ser definido e fazer reload completo da página
-                setTimeout(() => {
-                  window.location.replace('/dashboard');
-                }, 800);
-              </script>
-            </body>
-          </html>
-        `);
-      });
+              }
+              
+              // Aguardar 1 segundo para cookie ser definido, depois verificar
+              setTimeout(checkSession, 1000);
+            </script>
+          </body>
+        </html>
+      `);
     });
   } catch (error) {
     console.error("❌ Google OAuth callback error (catch geral):", error);
