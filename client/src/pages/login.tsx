@@ -14,7 +14,6 @@ import { apiRequest } from "@/lib/queryClient";
 const loginSchema = z.object({
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   password: z.string().min(1, "Senha é obrigatória"),
-  userType: z.enum(["client", "admin"]).default("client"),
   rememberMe: z.boolean().optional(),
 });
 
@@ -51,7 +50,6 @@ export default function Login() {
     defaultValues: {
       email: "",
       password: "",
-      userType: "client",
       rememberMe: false,
     },
   });
@@ -67,11 +65,7 @@ export default function Login() {
         description: `Bem-vindo de volta, ${data.firstName || data.username}!`,
       });
       
-      if (data.userType === "admin") {
-        setLocation("/admin");
-      } else {
-        setLocation("/dashboard");
-      }
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({

@@ -78,19 +78,19 @@ export default function Register() {
       const { confirmPassword, terms, ...registerData } = data;
       return apiRequest("/api/auth/register", "POST", {
         ...registerData,
-        userType: "client",
         planType: registerData.planType || "gratuito"
       });
     },
     onSuccess: (data: any) => {
+      queryClient.setQueryData(["/api/auth/me"], data);
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: `Conta criada para ${data.firstName} ${data.lastName}. Redirecionando para login...`,
+        description: `Bem-vindo, ${data.firstName} ${data.lastName}!`,
       });
       
       setTimeout(() => {
-        setLocation("/login");
-      }, 2000);
+        setLocation("/dashboard");
+      }, 1500);
     },
     onError: (error: any) => {
       toast({

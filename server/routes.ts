@@ -128,13 +128,25 @@ router.post("/api/auth/register", async (req: AuthenticatedRequest, res: Respons
     const user = await storage.createUser({
       ...userData,
       password: hashedPassword,
+      planType: userData.planType || 'gratuito',
     });
 
     console.log("✅ Usuário criado com sucesso:", user.id);
-
-    // Remove password from response
-    const { password, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    
+    // Auto-login após cadastro
+    req.session.userId = user.id.toString();
+    
+    // Aguardar sessão ser salva
+    req.session.save((err) => {
+      if (err) {
+        console.error("❌ Erro ao salvar sessão:", err);
+        // Mesmo com erro na sessão, retornar sucesso no cadastro
+      }
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    });
   } catch (error: any) {
     console.error("❌ Registration error:", error);
     console.error("Detalhes do erro:", error.message);
@@ -175,8 +187,17 @@ router.post("/api/auth/login", async (req: AuthenticatedRequest, res: Response) 
 
     console.log("✅ Login bem-sucedido para:", user.email);
     req.session.userId = user.id.toString();
-    const { password: _, ...userWithoutPassword } = user;
-    res.json(userWithoutPassword);
+    
+    // Aguardar a sessão ser salva antes de retornar
+    req.session.save((err) => {
+      if (err) {
+        console.error("❌ Erro ao salvar sessão:", err);
+        return res.status(500).json({ error: "Erro ao criar sessão" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    });
   } catch (error: any) {
     console.error("❌ Login error:", error);
     console.error("Detalhes:", error.message);
@@ -308,7 +329,6 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
         lastName: googleUser.family_name || '',
         password: hashedPassword,
         planType: 'gratuito',
-        userType: 'client',
       });
       console.log('✅ Novo usuário criado:', user.id);
     } else {
@@ -319,9 +339,17 @@ router.get("/api/auth/google/callback", async (req: AuthenticatedRequest, res: R
     req.session.userId = user.id.toString();
     console.log('✅ Sessão criada para usuário:', user.id);
     
-    // Redirect to dashboard
-    console.log('🔄 Redirecionando para dashboard');
-    res.redirect('/dashboard');
+    // Salvar sessão antes de redirecionar
+    req.session.save((err) => {
+      if (err) {
+        console.error("❌ Erro ao salvar sessão:", err);
+        return res.redirect('/login?error=session_error');
+      }
+      
+      // Redirect to dashboard
+      console.log('🔄 Redirecionando para dashboard');
+      res.redirect('/dashboard');
+    });
   } catch (error) {
     console.error("❌ Google OAuth callback error:", error);
     console.error("❌ Stack trace:", (error as Error).stack);
